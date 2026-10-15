@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<title>혈액형 가계도</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+<style>
+/* 레이아웃: 스티커 느낌의 둥근 카드. 왼쪽에 가족 입력, 오른쪽에 얼굴 달린 가계도. 좁은 화면에서는 위아래로 쌓음. */
+:root {
+  --bg: #e8f5ff;
+  --paper: #f6fbff;
+  --surface: #ffffff;
+  --ink: #000000;
+  --muted: #000000;
+  --line: #cfe3f5;
+  --track: #e6d9f0;
+  --accent: #ff5d8f;
+  --on-accent: #000000;
+  --accent-soft: #ffe0ea;
+  --bar: #ff7aa2;
+  --sh: #ffc2d4;
+  --c-A: #ffc2d4;
+  --c-B: #b6defc;
+  --c-AB: #dccbff;
+  --c-O: #bff0d4;
+  --font-display: "Jua", "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1730;
+    --paper: #251d3d;
+    --surface: #2a2142;
+    --ink: #ffffff;
+    --muted: #ffffff;
+    --line: #3d3260;
+    --track: #43386a;
+    --accent: #ff86ad;
+    --on-accent: #2a1230;
+    --accent-soft: #4a2540;
+    --bar: #ff86ad;
+    --sh: #4a2d66;
+    --c-A: #b8476f;
+    --c-B: #3f77b3;
+    --c-AB: #7456b8;
+    --c-O: #3f9a76;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1730;
+  --paper: #251d3d;
+  --surface: #2a2142;
+  --ink: #ffffff;
+  --muted: #ffffff;
+  --line: #3d3260;
+  --track: #43386a;
+  --accent: #ff86ad;
+  --on-accent: #2a1230;
+  --accent-soft: #4a2540;
+  --bar: #ff86ad;
+  --sh: #4a2d66;
+  --c-A: #b8476f;
+  --c-B: #3f77b3;
+  --c-AB: #7456b8;
+  --c-O: #3f9a76;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+*, *::before, *::after { box-sizing: border-box; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; }
+header { display: flex; align-items: center; gap: 14px; }
+header svg { flex: none; }
+header h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 0 0 4px;
+  text-wrap: balance;
+}
+header p { margin: 0; color: var(--muted); max-width: 46ch; }
+
+.layout { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 390px) minmax(0, 1fr); }
+}
+.panel {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  padding: 20px;
+  min-width: 0;
+  box-shadow: 4px 6px 0 var(--sh);
+}
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 21px; margin: 0 0 14px; }
+.cap { font-family: var(--font-display); font-size: 14px; color: var(--muted); letter-spacing: 0.04em; }
+.stack { display: grid; gap: 24px; min-width: 0; }
+
+/* 입력 */
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.row + .row { margin-top: 12px; }
+.who { width: 3.3em; font-family: var(--font-display); font-size: 18px; flex: none; }
+.seg { display: inline-flex; gap: 6px; }
+.seg label { display: block; position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; width: 100%; height: 100%; }
+.seg span {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  min-height: 42px;
+  padding: 0 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--muted);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.seg input:checked + span {
+  background: var(--c);
+  color: var(--ink);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.t-A { --c: var(--c-A); } .t-B { --c: var(--c-B); } .t-AB { --c: var(--c-AB); } .t-O { --c: var(--c-O); }
+select, button {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  min-height: 42px;
+  padding: 0 14px;
+}
+select { color-scheme: inherit; }
+button { cursor: pointer; }
+button:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.rm { width: 42px; padding: 0; font-size: 20px; line-height: 1; color: var(--muted); }
+.divider { border: 0; border-top: 2px dashed var(--line); margin: 18px 0 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.btn-main { background: var(--accent); color: var(--on-accent); }
+.btn-main[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* 가계도 */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--font-display); font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--ink); background: var(--c-AB); vertical-align: -2px; margin-right: 6px; }
+.legend .sq { border-radius: 5px; }
+.legend .ci { border-radius: 50%; }
+.legend .di { border-radius: 4px; transform: rotate(45deg) scale(0.85); }
+.scroller { overflow-x: auto; border: 2px dashed var(--line); border-radius: 18px; background: var(--paper); }
+.scroller svg { display: block; margin: 0 auto; }
+.alert {
+  background: var(--accent-soft);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.alert[hidden] { display: none; }
+
+.f-A { fill: var(--c-A); } .f-B { fill: var(--c-B); } .f-AB { fill: var(--c-AB); } .f-O { fill: var(--c-O); }
+.sym { stroke: var(--ink); stroke-width: 2.25; }
+.ln { stroke: var(--ink); stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.eye { fill: var(--ink); }
+.mouth { stroke: var(--ink); stroke-width: 2; fill: none; stroke-linecap: round; }
+.blush { fill: var(--accent); opacity: 0.6; }
+.badge { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.s-sym { font-family: var(--font-display); font-size: 12px; fill: var(--ink); text-anchor: middle; }
+.s-name { font-family: var(--font-display); font-size: 15px; fill: var(--ink); text-anchor: middle; }
+.s-g { font-family: var(--font-display); font-size: 12px; fill: var(--ink); }
+.s-p { font-family: var(--font-display); font-size: 12px; fill: var(--muted); text-anchor: end; }
+.trk { fill: var(--track); }
+.fil { fill: var(--bar); }
+.pp { fill: var(--paper); }
+.heart { fill: var(--accent); stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.pal { transform-box: fill-box; transform-origin: 50% 90%; }
+.nd:hover .pal { animation: wob 0.5s ease-in-out; }
+@keyframes wob { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+
+/* 요약 */
+.sum { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sum li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.sum b { font-family: var(--font-display); font-weight: 400; font-size: 17px; }
+.chip {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--c);
+  border: 2px solid var(--ink);
+}
+.geno { font-family: var(--font-display); font-size: 16px; }
+.note { color: var(--muted); font-size: 14px; margin: 12px 0 0; }
+
+/* 다음 아이 */
+.next { display: flex; height: 36px; border-radius: 999px; overflow: hidden; border: 2px solid var(--ink); background: var(--paper); }
+.next span { display: block; background: var(--c); }
+.next span + span { border-left: 2px solid var(--ink); }
+.next-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-family: var(--font-display); font-size: 15px; }
+.qr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px; }
+.qr-box { background: #ffffff; border: 2px solid var(--ink); border-radius: 18px; padding: 12px; width: 184px; height: 184px; display: grid; place-items: center; flex: none; }
+.qr-box img, .qr-box canvas { display: block; max-width: 100%; }
+.qr-info { flex: 1 1 200px; min-width: 0; display: grid; gap: 10px; }
+.qr-info p { margin: 0; }
+.linkline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.linkline code { font-family: var(--font-body); font-size: 13px; overflow-wrap: anywhere; min-width: 0; flex: 1 1 160px; }
+.next-legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; background: var(--c); border: 2px solid var(--ink); margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg width="48" height="52" viewBox="0 0 40 44" aria-hidden="true">
+      <path d="M20 3 C20 3 6 19 6 28 a14 14 0 0 0 28 0 C34 19 20 3 20 3Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="2.25" stroke-linejoin="round"/>
+      <ellipse cx="13" cy="26" rx="2.2" ry="3.4" fill="#fff" opacity="0.8" transform="rotate(20 13 26)"/>
+      <circle cx="16" cy="30" r="1.9" fill="var(--ink)"/><circle cx="25" cy="30" r="1.9" fill="var(--ink)"/>
+      <path d="M18 34 Q20.5 37 23 34" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>혈액형 가계도</h1>
+      <p>부모와 자녀의 혈액형을 고르면 AA, AO 같은 유전자형 확률을 계산해서 가계도에 그려줘요.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="panel" aria-labelledby="h-input">
+      <h2 id="h-input">가족 혈액형</h2>
+      <form id="form" onsubmit="return false">
+        <div class="cap">부모</div>
+        <div id="parents"></div>
+        <hr class="divider">
+        <div class="cap">자녀</div>
+        <div id="kids"></div>
+        <div class="actions">
+          <button type="button" class="btn-main" id="add">자녀 추가</button>
+          <button type="button" id="reset">예시 가족으로 되돌리기</button>
+        </div>
+      </form>
+    </section>
+
+    <div class="stack">
+      <section class="panel" aria-labelledby="h-tree">
+        <h2 id="h-tree">가계도</h2>
+        <div class="legend" aria-hidden="true">
+          <span><i class="sq"></i>남</span><span><i class="ci"></i>여</span><span><i class="di"></i>미정</span>
+        </div>
+        <div class="alert" id="alert" role="alert" hidden></div>
+        <div class="scroller"><div id="tree"></div></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-sum">
+        <h2 id="h-sum">유전자형 요약</h2>
+        <ul class="sum" id="sum"></ul>
+        <p class="note">A형과 B형은 AA 또는 AO(BB 또는 BO)일 수 있어요. AB형은 AB, O형은 OO로 정해져요.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-next">
+        <h2 id="h-next">다음 아이의 혈액형 확률</h2>
+        <div class="next" id="next"></div>
+        <div class="next-legend" id="next-legend"></div>
+        <p class="note">인구 평균 같은 외부 정보는 쓰지 않고, 입력한 가족의 혈액형만으로 계산해요. 부모가 A형이면 AA와 AO를 처음에는 똑같이 보고, 자녀의 혈액형을 볼수록 확률이 달라져요. 참고용 추정값이고 검사 결과를 대신하지 않아요.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+/*<compute>*/
+var GENO = { A: ['AA', 'AO'], B: ['BB', 'BO'], AB: ['AB'], O: ['OO'] };
+function phen(g) {
+  var a = g.indexOf('A') > -1, b = g.indexOf('B') > -1;
+  return a && b ? 'AB' : a ? 'A' : b ? 'B' : 'O';
+}
+function norm(x, y) { return x < y ? x + y : y + x; }
+function prior(g) { return 1; }
+function childDist(g1, g2) {
+  var d = {};
+  for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++) {
+    var k = norm(g1.charAt(i), g2.charAt(j));
+    d[k] = (d[k] || 0) + 0.25;
+  }
+  return d;
+}
+function pPhen(d, ph) {
+  var s = 0;
+  for (var g in d) if (phen(g) === ph) s += d[g];
+  return s;
+}
+function prod(arr, skip) {
+  var r = 1;
+  for (var i = 0; i < arr.length; i++) if (i !== skip) r *= arr[i];
+  return r;
+}
+function compute(fa, mo, kids) {
+  var combos = [], total = 0;
+  GENO[fa].forEach(function (g1) {
+    GENO[mo].forEach(function (g2) {
+      var d = childDist(g1, g2);
+      combos.push({
+        g1: g1, g2: g2, w0: prior(g1) * prior(g2), d: d,
+        pp: kids.map(function (k) { return pPhen(d, k); })
+      });
+    });
+  });
+  combos.forEach(function (c) { c.w = c.w0 * prod(c.pp, -1); total += c.w; });
+  if (total <= 0) {
+    var bad = [];
+    kids.forEach(function (k, i) {
+      if (combos.every(function (c) { return c.pp[i] === 0; })) bad.push(i);
+    });
+    return { error: true, bad: bad };
+  }
+  function parentPost(list, key) {
+    return list.map(function (g) {
+      var s = 0;
+      combos.forEach(function (c) { if (c[key] === g) s += c.w; });
+      return { g: g, p: s / total };
+    });
+  }
+  var kidsOut = kids.map(function (k, i) {
+    var raw = GENO[k].map(function (g) {
+      var s = 0;
+      combos.forEach(function (c) { s += c.w0 * (c.d[g] || 0) * prod(c.pp, i); });
+      return s;
+    });
+    var sum = raw.reduce(function (a, b) { return a + b; }, 0);
+    return GENO[k].map(function (g, j) { return { g: g, p: raw[j] / sum }; });
+  });
+  var next = {};
+  ['A', 'B', 'AB', 'O'].forEach(function (ph) {
+    var s = 0;
+    combos.forEach(function (c) { s += (c.w / total) * pPhen(c.d, ph); });
+    next[ph] = s;
+  });
+  return { father: parentPost(GENO[fa], 'g1'), mother: parentPost(GENO[mo], 'g2'), kids: kidsOut, next: next };
+}
+/*</compute>*/
+
+var ORD = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째', '일곱째', '여덟째', '아홉째', '열째'];
+var TYPES = ['A', 'B', 'AB', 'O'];
+var EXAMPLE = {
+  father: 'AB', mother: 'A',
+  kids: [{ bt: 'A', sex: 'U' }, { bt: 'AB', sex: 'U' }, { bt: 'A', sex: 'U' }, { bt: 'A', sex: 'U' }]
+};
+var state = JSON.parse(JSON.stringify(EXAMPLE));
+
+function $(id) { return document.getElementById(id); }
+function seg(name, val, label) {
+  return '<div class="seg" role="radiogroup" aria-label="' + label + ' 혈액형">' + TYPES.map(function (t) {
+    return '<label class="t-' + t + '"><input type="radio" name="' + name + '" id="' + name + '-' + t + '" value="' + t + '"' +
+      (val === t ? ' checked' : '') + '><span>' + t + '</span></label>';
+  }).join('') + '</div>';
+}
+function renderParents() {
+  $('parents').innerHTML =
+    '<div class="row"><span class="who">아빠</span>' + seg('fa', state.father, '아빠') + '</div>' +
+    '<div class="row"><span class="who">엄마</span>' + seg('mo', state.mother, '엄마') + '</div>';
+}
+function renderKids() {
+  $('kids').innerHTML = state.kids.map(function (k, i) {
+    return '<div class="row"><span class="who">' + ORD[i] + '</span>' + seg('k' + i, k.bt, ORD[i]) +
+      '<select id="sx' + i + '" data-i="' + i + '" aria-label="' + ORD[i] + ' 성별">' +
+      [['U', '미정'], ['M', '남'], ['F', '여']].map(function (o) {
+        return '<option value="' + o[0] + '"' + (k.sex === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select>' +
+      '<button type="button" class="rm" data-rm="' + i + '" aria-label="' + ORD[i] + ' 삭제">×</button></div>';
+  }).join('');
+  $('add').disabled = state.kids.length >= ORD.length;
+}
+
+function pct(p) {
+  var r = Math.round(p * 100);
+  return r === 0 && p > 0 ? '&lt;1%' : r + '%';
+}
+function names() { return ['아빠', '엄마'].concat(ORD.slice(0, state.kids.length)); }
+
+function sym(cx, cy, sex, bt) {
+  var c = 'sym f-' + bt;
+  var s;
+  if (sex === 'M') s = '<rect class="' + c + '" x="' + (cx - 27) + '" y="' + (cy - 27) + '" width="54" height="54" rx="17"/>';
+  else if (sex === 'F') s = '<circle class="' + c + '" cx="' + cx + '" cy="' + cy + '" r="28"/>';
+  else s = '<rect class="' + c + '" x="' + (cx - 22) + '" y="' + (cy - 22) + '" width="44" height="44" rx="13" transform="rotate(45 ' + cx + ' ' + cy + ')"/>';
+  var face =
+    '<circle class="eye" cx="' + (cx - 8) + '" cy="' + (cy - 4) + '" r="2.8"/>' +
+    '<circle class="eye" cx="' + (cx + 8) + '" cy="' + (cy - 4) + '" r="2.8"/>' +
+    '<circle class="blush" cx="' + (cx - 15) + '" cy="' + (cy + 4) + '" r="3.4"/>' +
+    '<circle class="blush" cx="' + (cx + 15) + '" cy="' + (cy + 4) + '" r="3.4"/>' +
+    '<path class="mouth" d="M' + (cx - 4.5) + ' ' + (cy + 3) + ' Q' + cx + ' ' + (cy + 9) + ' ' + (cx + 4.5) + ' ' + (cy + 3) + '"/>';
+  var badge = '<circle class="badge" cx="' + (cx + 24) + '" cy="' + (cy + 24) + '" r="13"/>' +
+    '<text class="s-sym" x="' + (cx + 24) + '" y="' + (cy + 28.2) + '">' + bt + '</text>';
+  return '<g class="pal">' + s + face + badge + '</g>';
+}
+function topOf(cy, sex) { return sex === 'M' ? cy - 27 : sex === 'F' ? cy - 28 : cy - 31; }
+function node(cx, cy, sex, bt, label, list) {
+  var out = '<g class="nd">' + sym(cx, cy, sex, bt) +
+    '<text class="s-name" x="' + cx + '" y="' + (cy + 52) + '">' + label + '</text>';
+  if (list) {
+    list.forEach(function (o, i) {
+      var y = cy + 72 + i * 17;
+      out += '<text class="s-g" x="' + (cx - 46) + '" y="' + y + '">' + o.g + '</text>' +
+        '<rect class="trk" x="' + (cx - 17) + '" y="' + (y - 8) + '" width="36" height="8" rx="4"/>' +
+        '<rect class="fil" x="' + (cx - 17) + '" y="' + (y - 8) + '" width="' + Math.max(8 * (o.p > 0 ? 1 : 0), 36 * o.p).toFixed(1) + '" height="8" rx="4"/>' +
+        '<text class="s-p" x="' + (cx + 48) + '" y="' + y + '">' + pct(o.p) + '</text>';
+    });
+  }
+  return out + '</g>';
+}
+function draw(res) {
+  var n = state.kids.length, colW = 112;
+  var W = Math.max(n * colW, 272) + 32, H = n ? 352 : 170;
+  var cx = W / 2, py = 48, fx = cx - 66, mx = cx + 66, sibY = 184, ky = 232;
+  var nm = names();
+  var g = '';
+  var xs = [];
+  for (var i = 0; i < n; i++) xs.push((W - n * colW) / 2 + colW / 2 + i * colW);
+  g += '<line class="ln" x1="' + (fx + 30) + '" y1="' + py + '" x2="' + (mx - 30) + '" y2="' + py + '"/>';
+  if (n) {
+    g += '<line class="ln" x1="' + cx + '" y1="' + py + '" x2="' + cx + '" y2="' + sibY + '"/>';
+    if (n > 1) g += '<line class="ln" x1="' + xs[0] + '" y1="' + sibY + '" x2="' + xs[n - 1] + '" y2="' + sibY + '"/>';
+    state.kids.forEach(function (k, i) {
+      g += '<line class="ln" x1="' + xs[i] + '" y1="' + sibY + '" x2="' + xs[i] + '" y2="' + topOf(ky, k.sex) + '"/>';
+    });
+  }
+  g += '<g transform="translate(' + cx + ' ' + py + ')"><circle class="pp" r="13"/>' +
+    '<path class="heart" d="M0 7 C-11 -1 -8 -10 0 -4.5 C8 -10 11 -1 0 7Z"/></g>';
+  g += node(fx, py, 'M', state.father, nm[0], res && res.father);
+  g += node(mx, py, 'F', state.mother, nm[1], res && res.mother);
+  state.kids.forEach(function (k, i) {
+    g += node(xs[i], ky, k.sex, k.bt, nm[i + 2], res && res.kids[i]);
+  });
+  var label = '가계도: 아빠 ' + state.father + '형, 엄마 ' + state.mother + '형, 자녀 ' +
+    state.kids.map(function (k, i) { return ORD[i] + ' ' + k.bt + '형'; }).join(', ');
+  $('tree').innerHTML = '<svg role="img" aria-label="' + label + '" width="' + W + '" height="' + H +
+    '" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
+}
+
+function summary(res) {
+  var nm = names();
+  var people = [{ n: nm[0], bt: state.father, l: res.father }, { n: nm[1], bt: state.mother, l: res.mother }]
+    .concat(state.kids.map(function (k, i) { return { n: nm[i + 2], bt: k.bt, l: res.kids[i] }; }));
+  var rows = people.filter(function (p) { return p.l.length > 1; }).map(function (p) {
+    return '<li><b>' + p.n + '</b><span class="chip t-' + p.bt + '">' + p.bt + '형</span><span class="geno">' +
+      p.l.map(function (o) { return o.g + ' ' + pct(o.p); }).join(' · ') + '</span></li>';
+  });
+  $('sum').innerHTML = rows.length ? rows.join('') : '<li>모두 AB형이거나 O형이라 유전자형이 하나로 정해져요.</li>';
+}
+function nextChild(res) {
+  $('next').innerHTML = TYPES.map(function (t) {
+    return '<span class="t-' + t + '" style="width:' + (res.next[t] * 100).toFixed(2) + '%"></span>';
+  }).join('');
+  $('next-legend').innerHTML = TYPES.map(function (t) {
+    return '<span class="t-' + t + '">' + t + '형 ' + pct(res.next[t]) + '</span>';
+  }).join('');
+}
+
+function update() {
+  var res = compute(state.father, state.mother, state.kids.map(function (k) { return k.bt; }));
+  var al = $('alert');
+  if (res.error) {
+    var nm = names().slice(2);
+    al.hidden = false;
+    al.textContent = res.bad.length
+      ? res.bad.map(function (i) { return nm[i] + '(' + state.kids[i].bt + '형)'; }).join(', ') +
+        '의 혈액형은 ' + state.father + '형 아빠와 ' + state.mother + '형 엄마 사이에서 나올 수 없어요. 혈액형을 다시 확인해 주세요.'
+      : '입력한 혈액형 조합은 부모와 자녀 사이에서 함께 나올 수 없어요. 혈액형을 다시 확인해 주세요.';
+    draw(null);
+    $('sum').innerHTML = '<li>혈액형 조합을 고치면 확률이 나와요.</li>';
+    $('next').innerHTML = '';
+    $('next-legend').innerHTML = '';
+    return;
+  }
+  al.hidden = true;
+  draw(res);
+  summary(res);
+  nextChild(res);
+}
+
+$('form').addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.type === 'radio') {
+    if (t.name === 'fa') state.father = t.value;
+    else if (t.name === 'mo') state.mother = t.value;
+    else state.kids[parseInt(t.name.slice(1), 10)].bt = t.value;
+  } else if (t.tagName === 'SELECT') {
+    state.kids[parseInt(t.getAttribute('data-i'), 10)].sex = t.value;
+  }
+  update();
+});
+$('form').addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('[data-rm]') : null;
+  if (!b) return;
+  state.kids.splice(parseInt(b.getAttribute('data-rm'), 10), 1);
+  renderKids();
+  update();
+  $('add').focus();
+});
+$('add').addEventListener('click', function () {
+  if (state.kids.length >= ORD.length) return;
+  state.kids.push({ bt: 'A', sex: 'U' });
+  renderKids();
+  update();
+});
+$('reset').addEventListener('click', function () {
+  state = JSON.parse(JSON.stringify(EXAMPLE));
+  renderParents();
+  renderKids();
+  update();
+});
+
+renderParents();
+renderKids();
+update();
+})();
+</script>
+
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
